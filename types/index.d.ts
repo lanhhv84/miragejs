@@ -8,15 +8,16 @@
  */
 declare module "miragejs" {
   import {
-    FactoryDefinition,
-    ModelDefinition,
     BelongsTo,
+    FactoryDefinition,
     HasMany,
+    ModelDefinition,
   } from "miragejs/-types";
   import IdentityManager from "miragejs/identity-manager";
   export { IdentityManager };
   export { Server, createServer } from "miragejs/server";
   export { Registry, Instantiate, ModelInstance } from "miragejs/-types";
+  export type Collection<T extends {}> = import("./orm/collection").default<T>;
   export {
     Serializer,
     ActiveModelSerializer,
@@ -86,53 +87,6 @@ declare module "miragejs" {
    */
   export const Factory: FactoryDefinition;
 
-  /**
-   * A collection of zero or more Mirage model instances.
-   */
-  export class Collection<T> {
-    /** The number of models in the collection. */
-    length: number;
-
-    /** The dasherized model name this Collection represents. */
-    modelName: string;
-
-    /** The underlying plain JavaScript array of Models in this Collection. */
-    models: T[];
-
-    /** Adds a model to this collection. */
-    add(model: T): Collection<T>;
-
-    /** Destroys the db record for all models in the collection. */
-    destroy(): Collection<T>;
-
-    /** Returns a new Collection with its models filtered according to the provided callback function. */
-    filter(f: (value: T, index: number, models: T[]) => unknown): Collection<T>;
-
-    /** Checks if the Collection includes the given model. */
-    includes(model: T): boolean;
-
-    /** Modifies the Collection by merging the models from another collection. */
-    mergeCollection(collection: Collection<T>): Collection<T>;
-
-    /** Reloads each model in the collection. */
-    reload(): Collection<T>;
-
-    /** Removes a model from this collection. */
-    remove(model: T): Collection<T>;
-
-    /** Saves all models in the collection. */
-    save(): Collection<T>;
-
-    /** Returns a new Collection with a subset of its models selected from begin to end. */
-    slice(begin: number, end: number): Collection<T>;
-
-    /** Returns a new Collection with its models sorted according to the provided compare function. */
-    sort(f: (a: T, b: T) => number): Collection<T>;
-
-    /** Updates each model in the collection, and immediately persists all changes to the db. */
-    update<K extends keyof T>(key: K, val: T[K]): Collection<T>;
-  }
-
   export interface RelationshipOptions {
     inverse?: string | null;
     polymorphic?: boolean;
@@ -161,12 +115,13 @@ declare module "miragejs/-types" {
   import { Collection, Response } from "miragejs";
 
   /* A 1:1 relationship between models */
-  export class BelongsTo<Name extends string> {
+
+  class BelongsTo<Name extends string> {
     private name: Name;
   }
 
   /* A 1:many relationship between models */
-  export class HasMany<Name extends string> {
+  class HasMany<Name extends string> {
     private name: Name;
   }
 
@@ -195,10 +150,7 @@ declare module "miragejs/-types" {
    * Given a registry and the name of one of the models defined in it,
    * returns the type of that model as instantiated by Mirage.
    */
-  export type Instantiate<
-    Registry,
-    ModelName extends keyof Registry
-  > = ModelInstance<
+  type Instantiate<Registry, ModelName extends keyof Registry> = ModelInstance<
     {
       // Splitting and rejoining on `ModelName` ensures that unions distribute
       // properly, so that `Instantiate<Reg, 'foo' | 'bar'>` expands out like
@@ -225,9 +177,7 @@ declare module "miragejs/-types" {
   // Returns the instantiated type of the given model if it exists in the
   // given registry, or `unknown` otherwise.
   type InstantiateIfDefined<Registry, ModelName> =
-    ModelName extends keyof Registry
-      ? Instantiate<Registry, ModelName>
-      : unknown;
+    ModelName extends keyof Registry ? Instantiate<Registry, ModelName> : {};
 
   // The type-level equivalent of `Object.assign`
   type Assign<T, U> = U & Omit<T, keyof U>;
@@ -251,19 +201,19 @@ declare module "miragejs/-types" {
    * factory definitions, determining the behavior of ORM methods on
    * a `Server` and its corresponding `Schema` instance.
    */
-  export type Registry<
-    Models extends AnyModels,
-    Factories extends AnyFactories
-  > = {
+  type Registry<Models extends AnyModels, Factories extends AnyFactories> = {
     [K in keyof Models | keyof Factories]: ExtractModelData<Models, K> &
       ExtractFactoryData<Factories, K>;
   };
 
-  export type AnyModels = Record<string, ModelDefinition>;
-  export type AnyFactories = Record<string, FactoryDefinition>;
+  type AnyModels = Record<string, ModelDefinition>;
+  type AnyFactories = Record<string, FactoryDefinition>;
 
   /** A marker type for easily constraining type parameters that must be shaped like a Registry */
-  export type AnyRegistry = Registry<AnyModels, AnyFactories>;
+  type AnyRegistry = Registry<AnyModels, AnyFactories>;
+
+  type ModelInstance<Data extends {} = {}> =
+    import("orm/collection").ModelInstance<Data>;
 
   type MaybePromise<T> = T | PromiseLike<T>;
   type ValidResponse =
@@ -272,37 +222,17 @@ declare module "miragejs/-types" {
     | string
     | boolean
     | null;
-  export type AnyResponse = MaybePromise<
+  type AnyResponse = MaybePromise<
     ModelInstance | Response | ValidResponse | ValidResponse[]
   >;
-
-  /** Represents the type of an instantiated Mirage model.  */
-  export type ModelInstance<Data extends {} = {}> = Data & {
-    id?: string;
-    attrs: Data;
-    modelName: string;
-
-    /** Persists any updates on this model back to the Mirage database. */
-    save(): void;
-
-    /** Updates and immediately persists a single or multiple attr(s) on this model. */
-    update<K extends keyof Data>(key: K, value: Data[K]): void;
-    update(changes: Partial<Data>): void;
-
-    /** Removes this model from the Mirage database. */
-    destroy(): void;
-
-    /** Reloads this model's data from the Mirage database. */
-    reload(): void;
-  };
 }
 
 declare module "miragejs/server" {
-  import { Request, Registry as MirageRegistry } from "miragejs";
+  import { Registry as MirageRegistry, Request } from "miragejs";
   import {
-    AnyRegistry,
-    AnyModels,
     AnyFactories,
+    AnyModels,
+    AnyRegistry,
     AnyResponse,
     Instantiate,
   } from "miragejs/-types";
@@ -315,7 +245,7 @@ declare module "miragejs/server" {
   /**
    * Possible HTTP verbs
    * @see https://github.com/pretenderjs/pretender/blob/master/index.d.ts#L13
-   **/
+   */
   type HTTPVerb =
     | "get"
     | "put"
@@ -328,19 +258,19 @@ declare module "miragejs/server" {
   type PassthroughVerbs = HTTPVerb[];
 
   /** A callback that will be invoked when a given Mirage route is hit. */
-  export type RouteHandler<
+  type RouteHandler<
     Registry extends AnyRegistry,
     Response extends AnyResponse = AnyResponse
   > = (schema: Schema<Registry>, request: Request) => Response;
 
-  export interface HandlerOptions {
+  interface HandlerOptions {
     /** A number of ms to artificially delay responses to this route. */
     timing?: number;
   }
 
   type ShorthandOptions = "index" | "show" | "create" | "update" | "delete";
 
-  export interface ResourceOptions {
+  interface ResourceOptions {
     /** Whitelist of shorthand options */
     only?: ShorthandOptions[];
     /** Exclude list of shorthand options */
@@ -349,7 +279,7 @@ declare module "miragejs/server" {
     path?: string;
   }
 
-  export interface ServerConfig<
+  interface ServerConfig<
     Models extends AnyModels,
     Factories extends AnyFactories
   > {
@@ -383,39 +313,32 @@ declare module "miragejs/server" {
   /**
    * Starts up a Mirage server with the given configuration.
    */
-  export function createServer<
+  function createServer<
     Models extends AnyModels,
     Factories extends AnyFactories
   >(
     config: ServerConfig<Models, Factories>
   ): Server<MirageRegistry<Models, Factories>>;
 
-  export class Server<Registry extends AnyRegistry = AnyRegistry> {
-    constructor(options?: ServerConfig<AnyModels, AnyFactories>);
-
+  class Server<Registry extends AnyRegistry = AnyRegistry> {
     /** The underlying in-memory database instance for this server. */
     readonly db: Db;
-
     /** An interface to the Mirage ORM that allows for querying and creating records. */
     readonly schema: Schema<Registry>;
-
     /** Creates a model of the given type. */
     readonly create: Schema<Registry>["create"];
-
     /** Whether or not Mirage should log all requests/response cycles. */
     logging: boolean;
-
     /** A default number of ms to artificially delay responses for all routes. */
     timing: number;
-
     /** A default prefix applied to all subsequent route definitions. */
     namespace: string;
-
     /** Sets a string to prefix all route handler URLs with. */
     urlPrefix: string;
-
     /** Actual Pretender instance */
     pretender: PretenderServer;
+
+    constructor(options?: ServerConfig<AnyModels, AnyFactories>);
 
     /** Creates multiple models of the given type. */
     createList<
@@ -507,16 +430,19 @@ declare module "miragejs/db" {
   import DbCollection from "miragejs/db-collection";
   import IdentityManager from "miragejs/identity-manager";
 
-  type DbLookup = {
+  interface DbLookup {
     [key: string]: ReturnType<DbCollection["all"]> & Omit<DbCollection, "all">;
-  };
+  }
 
   class DbClass {
     constructor(initialData: [], identityManagers?: IdentityManager[]);
 
     createCollection(name: string, initialData?: any[]): void;
+
     dump(): void;
+
     emptyData(): void;
+
     loadData(data: any): void;
   }
 
@@ -628,12 +554,9 @@ declare module "miragejs/orm/schema" {
     /** Locates an existing model of the given type by attribute value(s), if one exists. */
     findBy<K extends keyof Registry>(
       type: K,
-      attributes: Partial<Instantiate<Registry, K>>
-    ): Instantiate<Registry, K> | null;
-
-    findBy<K extends keyof Registry>(
-      type: K,
-      predicate: (instance: Instantiate<Registry, K>) => boolean
+      attributes:
+        | Partial<Instantiate<Registry, K>>
+        | ((instance: Instantiate<Registry, K>) => boolean)
     ): Instantiate<Registry, K> | null;
 
     /** Locates an existing model of the given type by attribute value(s), creating one if it doesn't exist. */
@@ -675,20 +598,33 @@ declare module "miragejs/serializer" {
     root?: any;
     serializeIds?: any;
     include?: any;
+
     keyForAttribute?(attr: any): any;
+
     keyForCollection?(modelName: any): any;
+
     keyForEmbeddedRelationship?(attributeName: any): any;
+
     keyForForeignKey?(relationshipName: any): any;
+
     keyForModel?(modelName: any): any;
+
     keyForPolymorphicForeignKeyId?(relationshipName: string): string;
+
     keyForPolymorphicForeignKeyType?(relationshipName: string): string;
+
     keyForRelationship?(modelName: any): any;
+
     keyForRelationshipIds?(modelName: any): any;
+
     normalize?(json: any): any;
+
     serialize?(primaryResource: any, request: any): any;
+
     extend?(param?: SerializerInterface): SerializerInterface;
   }
 
+  // tslint:disable-next-line:no-unnecessary-class
   class Serializer implements SerializerInterface {
     static extend(param?: SerializerInterface | {}): SerializerInterface | {};
   }
@@ -697,7 +633,9 @@ declare module "miragejs/serializer" {
     alwaysIncludeLinkageData?: boolean;
 
     links?(model: any): any;
+
     shouldIncludeLinkageData?(relationshipKey: string, model: any): boolean;
+
     typeKeyForModel?(model: any): string;
   }
 
@@ -711,5 +649,6 @@ declare module "miragejs/serializer" {
   }
 
   class ActiveModelSerializer extends Serializer {}
+
   class RestSerializer extends Serializer {}
 }

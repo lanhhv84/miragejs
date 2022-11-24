@@ -1,7 +1,13 @@
-import { Server, Model, Collection } from "miragejs";
+import { Collection, Model, Server } from "miragejs";
 
 describe("External | Shared | ORM | collection", () => {
-  let server;
+  let server: Server;
+
+  type User = {
+    id: number;
+    name: string;
+    good: boolean;
+  };
 
   beforeEach(() => {
     server = new Server({
@@ -25,7 +31,8 @@ describe("External | Shared | ORM | collection", () => {
   });
 
   test("a collection can save its models", () => {
-    let collection = server.schema.users.all();
+    // @ts-ignore
+    const collection: Collection<User> = server.schema.users.all();
     collection.models[0].name = "Sam";
     collection.save();
 
@@ -33,7 +40,9 @@ describe("External | Shared | ORM | collection", () => {
   });
 
   test("a collection can reload its models", () => {
-    let collection = server.schema.users.all();
+    // FIXME: server.schema.users should be defined
+    // @ts-ignore
+    const collection: Collection<User> = server.schema.users.all();
     expect(collection.models[0].name).toEqual("Link");
 
     collection.models[0].name = "Sam";
@@ -44,29 +53,29 @@ describe("External | Shared | ORM | collection", () => {
   });
 
   test("a collection can filter its models", () => {
-    let collection = server.schema.users.all();
+    // @ts-ignore
+    const collection: Collection<User> = server.schema.users.all();
     expect(collection.models).toHaveLength(3);
 
-    let newCollection = collection.filter((author) => author.good);
+    const newCollection = collection.filter((author) => author.good);
 
-    expect(newCollection instanceof Collection).toBeTruthy();
     expect(newCollection.modelName).toEqual("user");
     expect(newCollection.models).toHaveLength(2);
   });
 
   test("a collection can sort its models", () => {
-    let collection = server.schema.users.all();
+    // @ts-ignore
+    const collection: Collection<User> = server.schema.users.all();
     expect(collection.models.map((m) => m.name)).toEqual([
       "Link",
       "Zelda",
       "Ganon",
     ]);
 
-    let newCollection = collection.sort((a, b) => {
+    const newCollection = collection.sort((a, b) => {
       return a.name.localeCompare(b.name);
     });
 
-    expect(newCollection instanceof Collection).toBeTruthy();
     expect(newCollection.modelName).toEqual("user");
     expect(newCollection.models.map((m) => m.name)).toEqual([
       "Ganon",
@@ -76,23 +85,29 @@ describe("External | Shared | ORM | collection", () => {
   });
 
   test("a collection can slice its models", () => {
-    let collection = server.schema.users.all();
+    // @ts-ignore
+    const collection: Collection<User> = server.schema.users.all();
     expect(collection.models.map((m) => m.name)).toEqual([
       "Link",
       "Zelda",
       "Ganon",
     ]);
 
-    let newCollection = collection.slice(-2);
+    const newCollection = collection.slice(-2);
 
-    expect(newCollection instanceof Collection).toBeTruthy();
     expect(newCollection.modelName).toEqual("user");
     expect(newCollection.models.map((m) => m.name)).toEqual(["Zelda", "Ganon"]);
   });
 
   test("a collection can merge with another collection", () => {
-    let goodGuys = server.schema.users.where((user) => user.good);
-    let badGuys = server.schema.users.where((user) => !user.good);
+    // @ts-ignore
+    const goodGuys: Collection<User> = server.schema.users.where(
+      (user: User) => user.good
+    );
+    // @ts-ignore
+    const badGuys: Collection<User> = server.schema.users.where(
+      (user: User) => !user.good
+    );
 
     expect(goodGuys.models).toHaveLength(2);
     expect(badGuys.models).toHaveLength(1);

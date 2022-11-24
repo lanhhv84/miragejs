@@ -22,6 +22,7 @@ module.exports = {
     "object-shorthand": 0,
     "arrow-parens": 0,
     "no-unused-vars": ["error", { args: "none" }],
+    "@typescript-eslint/ban-ts-comment": 0,
     "@typescript-eslint/ban-types": [
       "error",
       {
