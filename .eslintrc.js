@@ -1,10 +1,11 @@
 module.exports = {
   root: true,
-  parser: "babel-eslint",
-  plugins: ["import"],
+  parser: "@typescript-eslint/parser",
+  plugins: ["@typescript-eslint"],
   extends: [
     "eslint:recommended",
-    "plugin:import/errors",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
     "plugin:prettier/recommended",
   ],
   env: {
@@ -21,9 +22,14 @@ module.exports = {
     "object-shorthand": 0,
     "arrow-parens": 0,
     "no-unused-vars": ["error", { args: "none" }],
-    "import/no-extraneous-dependencies": [
+    "@typescript-eslint/ban-types": [
       "error",
-      { devDependencies: ["__tests__", "*.config.js"] },
+      {
+        extendDefaults: true,
+        types: {
+          "{}": false,
+        },
+      },
     ],
   },
   overrides: [
@@ -39,17 +45,6 @@ module.exports = {
         node: true,
       },
     },
-    {
-      files: ["__tests__/**"],
-      plugins: ["jest"],
-      env: {
-        "jest/globals": true,
-      },
-      extends: ["plugin:jest/recommended", "plugin:jest/style"],
-      rules: {
-        "jest/no-conditional-expect": "off",
-      },
-    },
   ],
   settings: {
     "import/resolver": {
@@ -58,7 +53,7 @@ module.exports = {
         ["miragejs", "./index"],
       ],
       node: {
-        extensions: ["js"],
+        extensions: ["js", "ts"],
       },
     },
   },
