@@ -5,10 +5,11 @@ import commonjs from "rollup-plugin-commonjs";
 import alias from "rollup-plugin-alias";
 
 let aliases = {
+  resolve: [".ts", ".js"],
   entries: [
     {
       find: /@lib(.*)/,
-      replacement: path.resolve(process.cwd(), "./lib$1.js"),
+      replacement: path.resolve(process.cwd(), "./dist$1.js"),
     },
   ],
 };
@@ -30,7 +31,7 @@ function isExternal(id) {
     it shouldn't be treated as external.
   */
   let isAbsoluteInternalModulePath = id.includes(
-    path.join(process.cwd(), "lib")
+    path.join(process.cwd(), "dist")
   );
 
   /*
@@ -52,22 +53,36 @@ function isExternal(id) {
   );
 }
 
+const onwarn = (warning) => {
+  // Skip certain warnings
+
+  // should intercept ... but doesn't in some rollup versions
+  if (warning.code === "THIS_IS_UNDEFINED") {
+    return;
+  }
+
+  // console.warn everything else
+  console.warn(warning.message);
+};
+
 let esm = {
-  input: "lib/index.js",
+  input: "dist/index.js",
   output: { file: `dist/mirage-esm.js`, sourcemap: true, format: "esm" },
   external: isExternal,
   plugins: [
     alias(aliases),
     babel({
+      babelHelpers: "bundled",
       exclude: "node_modules/**",
       sourceMaps: true,
-      presets: [["@babel/preset-env", {}]],
+      presets: [["@babel/typescript", {}]],
     }),
   ],
+  onwarn,
 };
 
 let cjs = {
-  input: "lib/index.js",
+  input: "dist/index.js",
   output: {
     file: `dist/mirage-cjs.js`,
     sourcemap: true,
@@ -79,10 +94,11 @@ let cjs = {
     alias(aliases),
     babel({
       exclude: "node_modules/**",
+      babelHelpers: "bundled",
       sourceMaps: true,
       presets: [
         [
-          "@babel/preset-env",
+          "@babel/typescript",
           {
             targets: { node: "current" },
           },
@@ -91,10 +107,11 @@ let cjs = {
     }),
     nodeResolve(),
   ],
+  onwarn,
 };
 
 let umd = {
-  input: "lib/index.js",
+  input: "dist/index.js",
   output: {
     file: "dist/mirage-umd.js",
     format: "umd",
@@ -106,10 +123,11 @@ let umd = {
     nodeResolve(),
     babel({
       exclude: "node_modules/**",
+      babelHelpers: "bundled",
       sourceMaps: true,
       presets: [
         [
-          "@babel/preset-env",
+          "@babel/typescript",
           {
             useBuiltIns: "usage",
             corejs: 3,
@@ -120,6 +138,7 @@ let umd = {
       ],
     }),
   ],
+  onwarn,
 };
 
 export default [esm, cjs, umd];
