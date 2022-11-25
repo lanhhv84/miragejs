@@ -69,7 +69,7 @@ RouteHandler.prototype._container = defaultContainer;
 Serializer.prototype._container = defaultContainer;
 // @ts-ignore
 SerializerRegistry.prototype._container = defaultContainer;
-// @ts-ignore
+
 Schema.prototype._container = defaultContainer;
 
 export default Container;

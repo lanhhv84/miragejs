@@ -1,7 +1,7 @@
 /**
  @hide
  */
-export default function assert(bool: boolean | string, text: string = "") {
+export default function assert(bool: unknown, text = "") {
   if (typeof bool === "string" && !text) {
     throw new MirageError(bool);
   }

@@ -1,7 +1,7 @@
 /**
  @hide
  */
-export default function assert(bool: boolean | string, text?: string): void;
+export default function assert(bool: unknown, text?: string): void;
 /**
  @public
  @hide
