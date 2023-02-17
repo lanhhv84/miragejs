@@ -11,7 +11,7 @@ const modelNameCache: Record<string, string> = {};
 type Assign<T, U> = U & Omit<T, keyof U>;
 
 export interface ModelDefinition<Data extends {} = {}> {
-  prototype: any;
+  prototype: Record<string, any>;
   belongsToAssociations: any[];
   hasManyAssociations: any[];
 
@@ -283,7 +283,10 @@ export default class Schema<Registry extends AnyRegistry>
    @param attrs
    @public
    */
-  new(type: string, attrs: Record<string, unknown>) {
+  new<
+    K extends keyof Registry & string = string,
+    ElementType = Partial<ExtractModelData<RegistryModel<Registry>, K>>
+  >(type: K, attrs: ElementType) {
     return this._instantiateModel(dasherize(type), attrs);
   }
 
@@ -302,7 +305,10 @@ export default class Schema<Registry extends AnyRegistry>
    @param attrs
    @public
    */
-  create(type: string, attrs: Record<string, unknown>) {
+  create<
+    K extends keyof Registry & string = string,
+    ElementType = Partial<ExtractModelData<RegistryModel<Registry>, K>>
+  >(type: K, attrs: ElementType) {
     return this.new(type, attrs).save();
   }
 
@@ -414,7 +420,10 @@ export default class Schema<Registry extends AnyRegistry>
    @param attrs
    @public
    */
-  findOrCreateBy(type: string, attrs: Record<string, unknown>) {
+  findOrCreateBy<
+    K extends keyof Registry & string = string,
+    ElementType = Partial<ExtractModelData<RegistryModel<Registry>, K>>
+  >(type: K, attrs: ElementType) {
     const collection = this.collectionForType(type);
     const record = collection.findBy(attrs);
     let model;
@@ -673,7 +682,10 @@ export default class Schema<Registry extends AnyRegistry>
    @private
    @hide
    */
-  private _instantiateModel(modelName: string, attrs: Record<string, any>) {
+  private _instantiateModel<
+    K extends keyof Registry & string = string,
+    ElementType = Partial<ExtractModelData<RegistryModel<Registry>, K>>
+  >(modelName: string, attrs: ElementType) {
     const ModelClass = this._modelFor(modelName);
     const fks = this._foreignKeysFor(modelName);
 
@@ -710,7 +722,10 @@ export default class Schema<Registry extends AnyRegistry>
    @private
    @hide
    */
-  private _hydrate(records: any[], modelName: string) {
+  private _hydrate<
+    K extends keyof Registry & string = string,
+    ElementType = Partial<ExtractModelData<RegistryModel<Registry>, K>>
+  >(records: ElementType[], modelName: string) {
     if (Array.isArray(records)) {
       const models = records.map((record) => {
         return this._instantiateModel(modelName, record);
